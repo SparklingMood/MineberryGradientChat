@@ -1,10 +1,7 @@
-
 package com.mineberry.gradientchat;
 
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.message.v1.ClientSendMessageEvents;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.text.Text;
 
 public final class MineberryGradientChat implements ClientModInitializer {
 
@@ -20,7 +17,6 @@ public final class MineberryGradientChat implements ClientModInitializer {
         ClientSendMessageEvents.ALLOW_CHAT.register(message -> {
             if (message.equals("!toggle")) {
                 enabled = !enabled;
-                showLocalMessage("Gradient " + (enabled ? "ON" : "OFF"));
                 return false;
             }
 
@@ -42,24 +38,14 @@ public final class MineberryGradientChat implements ClientModInitializer {
         String[] parts = message.trim().split("\\s+");
 
         if (parts.length != 3) {
-            showLocalMessage(
-                "Usage: !chatcolor RRGGBB RRGGBB"
-            );
             return;
         }
 
         try {
-            int first = parseColor(parts[1]);
-            int second = parseColor(parts[2]);
-
-            startColor = first;
-            endColor = second;
-
-            showLocalMessage("Gradient colours updated!");
+            startColor = parseColor(parts[1]);
+            endColor = parseColor(parts[2]);
         } catch (IllegalArgumentException e) {
-            showLocalMessage(
-                "Use two 6-digit hex colours, e.g. !chatcolor 8A2BE2 FF69B4"
-            );
+            // Invalid colours are ignored.
         }
     }
 
@@ -101,83 +87,5 @@ public final class MineberryGradientChat implements ClientModInitializer {
             return message;
         }
 
-        // Start with two characters per colour.
-        // Increase the group size until the formatted message fits.
         for (int groupSize = DEFAULT_GROUP_SIZE;
              groupSize <= count;
-             groupSize++) {
-
-            String formatted = buildGradient(
-                chars, count, groupSize
-            );
-
-            if (formatted.length() <= MAX_LENGTH) {
-                return formatted;
-            }
-        }
-
-        // If formatting cannot fit, send the original message.
-        return message;
-    }
-
-    private static String buildGradient(
-            int[] chars, int count, int groupSize) {
-
-        int groups = (count + groupSize - 1) / groupSize;
-        StringBuilder out = new StringBuilder();
-        int index = 0;
-
-        for (int c : chars) {
-            if (Character.isWhitespace(c)) {
-                out.appendCodePoint(c);
-                continue;
-            }
-
-            if (index % groupSize == 0) {
-                int group = index / groupSize;
-
-                double t = groups <= 1
-                    ? 0.0
-                    : (double) group / (groups - 1);
-
-                int r = interpolate(
-                    (startColor >> 16) & 255,
-                    (endColor >> 16) & 255, t
-                );
-
-                int g = interpolate(
-                    (startColor >> 8) & 255,
-                    (endColor >> 8) & 255, t
-                );
-
-                int b = interpolate(
-                    startColor & 255,
-                    endColor & 255, t
-                );
-
-                out.append(String.format(
-                    "&#%02X%02X%02X", r, g, b
-                ));
-            }
-
-            out.appendCodePoint(c);
-            index++;
-        }
-
-        return out.toString();
-    }
-
-    private static int interpolate(int a, int b, double t) {
-        return (int) Math.round(a + (b - a) * t);
-    }
-
-    private static void showLocalMessage(String message) {
-        MinecraftClient client = MinecraftClient.getInstance();
-
-        if (client != null && client.inGameHud != null) {
-            client.inGameHud.getChatHud().addMessage(
-                Text.literal("[Gradient Chat] " + message)
-            );
-        }
-    }
-}
