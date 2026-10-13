@@ -35,7 +35,7 @@ build/libs/mineberry-gradient-chat-1.0.0.jar
 
 If you have a different Gradle version, install Gradle 9.6.1 or newer and ensure `gradle --version` reports Java 25.
 
-## Install in MojoLauncher (Android)
+## Install in Minecraft
 
 1. Build the JAR on a computer or remote build environment first. This source project is not itself a mod JAR.
 2. Copy `build/libs/mineberry-gradient-chat-1.0.0.jar` to your phone.
