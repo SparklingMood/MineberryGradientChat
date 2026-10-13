@@ -1,3 +1,4 @@
+
 package com.mineberry.gradientchat;
 
 import net.fabricmc.api.ClientModInitializer;
@@ -42,10 +43,13 @@ public final class MineberryGradientChat implements ClientModInitializer {
         }
 
         try {
-            startColor = parseColor(parts[1]);
-            endColor = parseColor(parts[2]);
-        } catch (IllegalArgumentException e) {
-            // Invalid colours are ignored.
+            int first = parseColor(parts[1]);
+            int second = parseColor(parts[2]);
+
+            startColor = first;
+            endColor = second;
+        } catch (IllegalArgumentException ignored) {
+            // Ignore invalid colours.
         }
     }
 
@@ -89,3 +93,68 @@ public final class MineberryGradientChat implements ClientModInitializer {
 
         for (int groupSize = DEFAULT_GROUP_SIZE;
              groupSize <= count;
+             groupSize++) {
+
+            String formatted = buildGradient(
+                chars, count, groupSize
+            );
+
+            if (formatted.length() <= MAX_LENGTH) {
+                return formatted;
+            }
+        }
+
+        return message;
+    }
+
+    private static String buildGradient(
+            int[] chars, int count, int groupSize) {
+
+        int groups = (count + groupSize - 1) / groupSize;
+        StringBuilder out = new StringBuilder();
+        int index = 0;
+
+        for (int c : chars) {
+            if (Character.isWhitespace(c)) {
+                out.appendCodePoint(c);
+                continue;
+            }
+
+            if (index % groupSize == 0) {
+                int group = index / groupSize;
+
+                double t = groups <= 1
+                    ? 0.0
+                    : (double) group / (groups - 1);
+
+                int r = interpolate(
+                    (startColor >> 16) & 255,
+                    (endColor >> 16) & 255, t
+                );
+
+                int g = interpolate(
+                    (startColor >> 8) & 255,
+                    (endColor >> 8) & 255, t
+                );
+
+                int b = interpolate(
+                    startColor & 255,
+                    endColor & 255, t
+                );
+
+                out.append(String.format(
+                    "&#%02X%02X%02X", r, g, b
+                ));
+            }
+
+            out.appendCodePoint(c);
+            index++;
+        }
+
+        return out.toString();
+    }
+
+    private static int interpolate(int a, int b, double t) {
+        return (int) Math.round(a + (b - a) * t);
+    }
+}
